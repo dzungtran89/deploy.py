@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.10.0 (2026-05-08)
+
+### Features
+
+- **docs**: Add documentation site with Trobz theme
+  ([`934805e`](https://github.com/trobz/deploy.py/commit/934805e7fda1b4bed987511ea06719a481c7e1ec))
+
+
 ## v0.9.0 (2026-05-08)
 
 ### Features
