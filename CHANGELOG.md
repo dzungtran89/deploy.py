@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.11.1 (2026-05-21)
+
+### Bug Fixes
+
+- **configure**: Skip venv creation when --force and venv already exists
+  ([`c7c6209`](https://github.com/trobz/deploy.py/commit/c7c62098443e1b74da50050b9c37bdbdb1d94f64))
+
+
 ## v0.11.0 (2026-05-19)
 
 ### Documentation
