@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.12.0 (2026-05-22)
+
+### Documentation
+
+- **update**: Support multiple databases
+  ([`4e9ecd5`](https://github.com/trobz/deploy.py/commit/4e9ecd5daee6acd9effa38dd2570cc4e62ab389c))
+
+### Features
+
+- **update**: Support multi-db
+  ([`508441d`](https://github.com/trobz/deploy.py/commit/508441d20f2a6c0e799a2bd274573052c1cee8d6))
+
+
 ## v0.11.1 (2026-05-21)
 
 ### Bug Fixes
