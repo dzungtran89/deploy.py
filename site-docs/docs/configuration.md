@@ -36,6 +36,11 @@ odoo-myproject-production:
   # Odoo only
   db: myproject                           # defaults to instance_name if omitted
 
+  # Multiple databases
+  db:
+    - myproject_staging
+    - myproject_integration
+
   # python / service only
   exec_start: myapp.main:app              # module path for python; verbatim for service
   build: npm ci && npm run build          # service only
@@ -66,7 +71,7 @@ odoo-myproject-production:
 | `ssh_port` | integer | all | SSH port on the remote host. |
 | `repo_url` | string | `configure` | Git repository URL. |
 | `type` | string | all | Deployment type: `odoo`, `python`, or `service`. |
-| `db` | string | `update` | Target database name (Odoo only). |
+| `db` | string or list of string | `update` | Target database name (Odoo only). Can be a list for multiple names. |
 | `exec_start` | string | `configure` | Entry point for python/service systemd unit. |
 | `build` | string | `configure`, `update` | Build command for `service` type. |
 | `hooks` | mapping | `update` | Lifecycle hooks — see [Hooks](hooks.md). |

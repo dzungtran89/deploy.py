@@ -23,7 +23,7 @@ deploy [--config FILE] update <instance_name> [<ssh_host>] \
 |--------|---------|-------------|
 | `--type` | auto | Deployment type: `odoo`, `python`, or `service` |
 | `-p`, `--port` | — | SSH port on the remote host |
-| `--db` | `<instance_name>` | Override target database name (Odoo only) |
+| `--db` | `<instance_name>` | Override target database name (Odoo only). Can be a list of comma-separated names |
 | `--ignore-hooks` | `False` | Skip all hook execution |
 | `--watch` | `False` | Watch service logs for working information |
 
@@ -86,6 +86,9 @@ deploy update odoo-myproject-production
 
 # Override database name
 deploy update odoo-myproject-production --db myproject_alt
+
+# Multiple database names
+deploy update odoo-myproject-production --db myproject_alt,myproject_staging
 
 # Custom SSH port
 deploy update odoo-myproject-staging -p 2222
