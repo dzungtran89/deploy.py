@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.15.1 (2026-05-28)
+
+### Bug Fixes
+
+- **all commands**: Migrate CLI from click to typer
+  ([`07d5181`](https://github.com/trobz/deploy.py/commit/07d5181146bd70a1466f025ba79b31efbfa78cf3))
+
+
 ## v0.15.0 (2026-05-28)
 
 ### Features
