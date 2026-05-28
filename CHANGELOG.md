@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.15.0 (2026-05-28)
+
+### Features
+
+- **configure, update**: Recursively clone and pull submodules during deployment
+  ([`8eece67`](https://github.com/trobz/deploy.py/commit/8eece6739de738651ab8f984b84733dd2ee76e16))
+
+
 ## v0.14.0 (2026-05-25)
 
 ### Features
