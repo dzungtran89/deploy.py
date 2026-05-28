@@ -145,7 +145,7 @@ def configure(  # noqa: C901
         else:
             click.secho(f"\nCloning {eff_repo_url} into ~/{instance_name}…", fg="green")
             try:
-                clone_cmd = f"git clone {eff_repo_url} $HOME/{instance_name}"
+                clone_cmd = f"git clone --recurse-submodules {eff_repo_url} $HOME/{instance_name}"
                 if eff_repo_branch:
                     clone_cmd += f" --branch {eff_repo_branch}"
                 executor.run(clone_cmd)
