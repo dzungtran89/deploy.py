@@ -165,11 +165,11 @@ def update(  # noqa: C901
         try:
             if eff_repo_branch:
                 executor.run(
-                    f"git fetch origin && git checkout {eff_repo_branch} && git pull",
+                    f"git fetch origin && git checkout {eff_repo_branch} && git pull --recurse-submodules",
                     cwd=instance_path,
                 )
             else:
-                executor.run("git pull", cwd=instance_path)
+                executor.run("git pull --recurse-submodules", cwd=instance_path)
         except ExecutorError as exc:
             run_hooks("post-update")
             run_hooks("post-update-fail")
