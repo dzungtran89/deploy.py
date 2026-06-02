@@ -48,6 +48,10 @@ def configure(  # noqa: C901
         str | None,
         typer.Option(help="Git branch to clone and track (defaults to the repository's default branch)."),
     ] = None,
+    watch: Annotated[
+        bool,
+        typer.Option("--watch", help="Stream service logs with journalctl after a successful configure."),
+    ] = False,
 ) -> None:
     """Configure a new deployment instance."""
     cfg = load_config(ctx.obj["config"], instance_name)
@@ -206,3 +210,10 @@ def configure(  # noqa: C901
         raise typer.Exit(code=1) from exc
 
     typer.secho(f"\nInstance {instance_name!r} configured successfully.", fg="green")
+
+    if watch:
+        typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
+        try:
+            executor.stream(f"journalctl --user -u {instance_name} -f")
+        except KeyboardInterrupt:
+            typer.echo()
