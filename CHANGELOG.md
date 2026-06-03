@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v0.16.0 (2026-06-03)
+
+### Features
+
+- **configure**: Add --watch option to stream logs after setup
+  ([`a03ff0c`](https://github.com/trobz/deploy.py/commit/a03ff0cbb66e8c3ad9c53e9451d94fb3ea808fa5))
+
+- **restart**: Add restart command with optional --watch
+  ([`07ab0df`](https://github.com/trobz/deploy.py/commit/07ab0df318a7ac5779be680bf9fd26d2234a3adf))
+
+
 ## v0.15.2 (2026-05-29)
 
 ### Bug Fixes
