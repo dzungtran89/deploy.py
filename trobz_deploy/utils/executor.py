@@ -108,31 +108,52 @@ class Executor:
 
         return result.stdout.strip()
 
-    def watch_logs(self, instance_name: str) -> None:
-        """Stream journalctl logs for *instance_name*, merged with the Odoo logfile if found.
+    def watch_logs(self, eff_type: str, instance_name: str) -> None:
+        """Stream journalctl logs for *instance_name*, merged with Odoo log files if found.
 
-        Reads ``config/odoo.conf`` under the instance home directory to locate
-        ``logfile``.  When present, both streams are tailed concurrently.
+        For ``eff_type == "odoo"``, reads ``config/odoo.conf`` under the instance
+        home directory to locate ``logfile``, and checks for a ``log/upgrade.log``
+        written by ``click-odoo-update``.  Any streams found are tailed concurrently.
         """
         typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
 
         log_file: str | None = None
-        try:
-            home_dir = self.capture("echo $HOME")
-            conf = f"{home_dir}/{instance_name}/config/odoo.conf"
-            raw = self.capture(f"grep -E '^logfile' {conf} | cut -d= -f2 | tr -d ' ' || true")
-            candidate = (raw or "").strip()
-            if candidate and candidate.lower() not in ("false", "none"):
-                log_file = candidate
-        except ExecutorError:
-            pass
+        upgrade_log_file: str | None = None
+        if eff_type == "odoo":
+            try:
+                home_dir = self.capture("echo $HOME")
+                instance_path = f"{home_dir}/{instance_name}"
+            except ExecutorError:
+                instance_path = None
+
+            if instance_path:
+                try:
+                    conf = f"{instance_path}/config/odoo.conf"
+                    raw = self.capture(f"grep -E '^logfile' {conf} | cut -d= -f2 | tr -d ' ' || true")
+                    candidate = (raw or "").strip()
+                    if candidate and candidate.lower() not in ("false", "none"):
+                        log_file = candidate
+                except ExecutorError:
+                    pass
+
+                candidate_upgrade_log = f"{instance_path}/log/upgrade.log"
+                try:
+                    self.run(f"test -f {candidate_upgrade_log}")
+                    upgrade_log_file = candidate_upgrade_log
+                except ExecutorError:
+                    pass
+
+        journalctl_cmd = f"journalctl --user -u {instance_name} -f -o short-iso"
+        tails: list[str] = []
+        if log_file:
+            typer.secho(f"Merging with Odoo log: {log_file}", fg="cyan")
+            tails.append(f"tail -f {log_file}")
+        if upgrade_log_file:
+            typer.secho(f"Merging with upgrade log: {upgrade_log_file}", fg="cyan")
+            tails.append(f"tail -f {upgrade_log_file}")
 
         try:
-            if log_file:
-                typer.secho(f"Merging with Odoo log: {log_file}", fg="cyan")
-                cmd = f"( journalctl --user -u {instance_name} -f & tail -f {log_file} & wait )"
-            else:
-                cmd = f"journalctl --user -u {instance_name} -f"
+            cmd = f"( {' & '.join([journalctl_cmd, *tails])} & wait )" if tails else journalctl_cmd
             self.stream(cmd)
         except KeyboardInterrupt:
             typer.echo()

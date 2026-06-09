@@ -39,7 +39,7 @@ def test_watch_streams_journalctl_after_success(runner):
     result, mock_exec = _invoke(runner, ["--watch"])
 
     assert result.exit_code == 0
-    mock_exec.watch_logs.assert_called_once_with("service-myapp-production")
+    mock_exec.watch_logs.assert_called_once_with("service", "service-myapp-production")
 
 
 def test_no_watch_does_not_stream(runner):

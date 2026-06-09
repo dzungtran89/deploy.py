@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 KNOWN_ENVS: frozenset[str] = frozenset({"integration", "staging", "production", "hotfix", "debug", "demo"})
+
+
+class DeployType(str, Enum):
+    odoo = "odoo"
+    python = "python"
+    service = "service"
+
 
 # Maps instance name prefix → deployment type
 _PREFIX_TO_TYPE: dict[str, str] = {
