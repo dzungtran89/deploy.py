@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Annotated, Any
 
 import typer
 
-from trobz_deploy.utils.config import load_config, resolve_options
+from trobz_deploy.utils.config import DeployType, load_config, resolve_options
 from trobz_deploy.utils.executor import Executor, ExecutorError
 from trobz_deploy.utils.render import render_unit
 from trobz_deploy.utils.venv import setup_odoo_venv, setup_package_venv, setup_python_venv
-
-
-class DeployType(str, Enum):
-    odoo = "odoo"
-    python = "python"
-    service = "service"
 
 
 def _is_git_repo(executor: Executor, path: str) -> bool:
@@ -212,8 +205,4 @@ def configure(  # noqa: C901
     typer.secho(f"\nInstance {instance_name!r} configured successfully.", fg="green")
 
     if watch:
-        typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
-        try:
-            executor.stream(f"journalctl --user -u {instance_name} -f")
-        except KeyboardInterrupt:
-            typer.echo()
+        executor.watch_logs(eff_type, instance_name)

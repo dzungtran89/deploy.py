@@ -108,6 +108,62 @@ class Executor:
 
         return result.stdout.strip()
 
+    @staticmethod
+    def _colorize(command: str, ansi_code: str) -> str:
+        """Pipe *command*'s output through ``sed``, wrapping each line in an ANSI color."""
+        return f'{command} | stdbuf -oL sed "s/.*/\x1b[{ansi_code}m&\x1b[0m/"'
+
+    def watch_logs(self, eff_type: str, instance_name: str) -> None:
+        """Stream journalctl logs for *instance_name*, merged with Odoo log files if found.
+
+        For ``eff_type == "odoo"``, reads ``config/odoo.conf`` under the instance
+        home directory to locate ``logfile``, and checks for a ``log/upgrade.log``
+        written by ``click-odoo-update``.  Any streams found are tailed concurrently.
+        """
+        typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
+
+        log_file: str | None = None
+        upgrade_log_file: str | None = None
+        if eff_type == "odoo":
+            try:
+                home_dir = self.capture("echo $HOME")
+                instance_path = f"{home_dir}/{instance_name}"
+            except ExecutorError:
+                instance_path = None
+
+            if instance_path:
+                try:
+                    conf = f"{instance_path}/config/odoo.conf"
+                    raw = self.capture(f"grep -E '^logfile' {conf} | cut -d= -f2 | tr -d ' ' || true")
+                    candidate = (raw or "").strip()
+                    if candidate and candidate.lower() not in ("false", "none"):
+                        log_file = candidate
+                except ExecutorError:
+                    pass
+
+                candidate_upgrade_log = f"{instance_path}/log/upgrade.log"
+                try:
+                    self.run(f"test -f {candidate_upgrade_log}")
+                    upgrade_log_file = candidate_upgrade_log
+                except ExecutorError:
+                    pass
+
+        streams: list[str] = [
+            self._colorize(f"journalctl --user -u {instance_name} -f -o short-iso", "36")  # cyan
+        ]
+        if log_file:
+            typer.secho(f"Merging with Odoo log: {log_file}", fg="cyan")
+            streams.append(self._colorize(f"tail -f {log_file}", "32"))  # green
+        if upgrade_log_file:
+            typer.secho(f"Merging with upgrade log: {upgrade_log_file}", fg="cyan")
+            streams.append(self._colorize(f"tail -f {upgrade_log_file}", "33"))  # yellow
+
+        try:
+            cmd = f"( {' & '.join(streams)} & wait )" if len(streams) > 1 else streams[0]
+            self.stream(cmd)
+        except KeyboardInterrupt:
+            typer.echo()
+
     def stream(self, command: str, cwd: str | None = None) -> None:
         """Run a long-lived streaming command (e.g. journalctl -f).
 

@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Annotated
 
 import typer
 
 from trobz_deploy.utils.addons import get_addons_path
-from trobz_deploy.utils.config import load_config, resolve_options
+from trobz_deploy.utils.config import DeployType, load_config, resolve_options
 from trobz_deploy.utils.executor import Executor, ExecutorError
 from trobz_deploy.utils.venv import setup_python_deps, upgrade_package
-
-
-class DeployType(str, Enum):
-    odoo = "odoo"
-    python = "python"
-    service = "service"
 
 
 def update(  # noqa: C901
@@ -176,7 +169,8 @@ def update(  # noqa: C901
             for db in eff_db:
                 typer.secho(f"\nUpdating database {db!r}…", fg="green")
                 executor.run(
-                    f".venv/bin/click-odoo-update --config config/odoo.conf -d {db} --addons-path={addons_path}",
+                    f".venv/bin/click-odoo-update --config config/odoo.conf -d {db}"
+                    f" --addons-path={addons_path} --logfile log/upgrade.log",
                     cwd=instance_path,
                 )
         executor.run(f"systemctl --user restart {instance_name}")
@@ -193,8 +187,4 @@ def update(  # noqa: C901
     typer.secho(f"\nInstance {instance_name!r} updated successfully.", fg="green")
 
     if watch:
-        typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
-        try:
-            executor.stream(f"journalctl --user -u {instance_name} -f")
-        except KeyboardInterrupt:
-            typer.echo()
+        executor.watch_logs(eff_type, instance_name)

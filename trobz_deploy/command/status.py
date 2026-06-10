@@ -4,7 +4,7 @@ from typing import Annotated
 
 import typer
 
-from trobz_deploy.utils.config import load_config
+from trobz_deploy.utils.config import DeployType, load_config, resolve_options
 from trobz_deploy.utils.executor import Executor, ExecutorError
 
 
@@ -42,6 +42,10 @@ def status(
     ctx: typer.Context,
     instance_name: Annotated[str, typer.Argument()],
     ssh_host: Annotated[str | None, typer.Argument()] = None,
+    deploy_type: Annotated[
+        DeployType | None,
+        typer.Option("--type", help="Deployment type (auto-detected from instance name prefix if omitted)."),
+    ] = None,
     ssh_port: Annotated[int | None, typer.Option("-p", "--port", help="SSH port on the remote host.")] = None,
     watch: Annotated[
         bool,
@@ -50,13 +54,25 @@ def status(
 ) -> None:
     """Show status of a deployment instance."""
     cfg = load_config(ctx.obj["config"], instance_name)
+    try:
+        opts = resolve_options(
+            cfg,
+            instance_name,
+            ssh_host=ssh_host,
+            ssh_port=ssh_port,
+            deploy_type=deploy_type.value if deploy_type else None,
+        )
+    except ValueError as exc:
+        typer.echo(typer.style(str(exc), fg="red"), err=True)
+        raise typer.Exit(code=1) from exc
 
-    # Resolve ssh_host/ssh_port: CLI arg > config value
-    eff_ssh_host: str | None = ssh_host if ssh_host is not None else cfg.get("ssh_host")
-    eff_ssh_port: int | None = ssh_port if ssh_port is not None else cfg.get("ssh_port")
+    eff_ssh_host: str | None = opts.get("ssh_host")
+    eff_ssh_port: int | None = opts.get("ssh_port")
+    eff_type: str = opts["type"]
 
     executor = Executor(eff_ssh_host, ctx.obj["verbose"], ssh_port=eff_ssh_port)
-    instance_path = f"$HOME/{instance_name}"
+    home_dir = executor.capture("echo $HOME")
+    instance_path = f"{home_dir}/{instance_name}"
 
     # Step 2: Verify instance directory exists
     try:
@@ -87,8 +103,4 @@ def status(
     typer.echo(f"Unit:      {unit_line}")
 
     if watch:
-        typer.secho("\nWatching service logs (Ctrl+C to stop)…", fg="cyan")
-        try:
-            executor.stream(f"journalctl --user -u {instance_name} -f")
-        except KeyboardInterrupt:
-            typer.echo()
+        executor.watch_logs(eff_type, instance_name)
