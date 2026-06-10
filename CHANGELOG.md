@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.17.0 (2026-06-10)
+
+### Bug Fixes
+
+- **status**: Retrieve and use home directory instead of $HOME
+  ([`394b101`](https://github.com/trobz/deploy.py/commit/394b1016ab84420cb182a17cb12598832faa8a5e))
+
+### Features
+
+- **executor**: Centralize log-watching and merge odoo logs
+  ([`6922def`](https://github.com/trobz/deploy.py/commit/6922def7db2b913e036b9b56ebac8180ab85685d))
+
+### Refactoring
+
+- Centralize DeployType and pass deploy type to watch_logs, watch upgrade log
+  ([`6a21083`](https://github.com/trobz/deploy.py/commit/6a2108316dac2a55c17b9f3651e9637f2a73df9a))
+
+- **executor**: Extract _colorize helper and add watch_logs tests
+  ([`e1284c8`](https://github.com/trobz/deploy.py/commit/e1284c82b20cec638c0f1d25be53b5183b9523f7))
+
+
 ## v0.16.0 (2026-06-03)
 
 ### Features
