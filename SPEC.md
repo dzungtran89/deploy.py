@@ -106,7 +106,7 @@ deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--ty
 |----------------|----------|-----------------------------------------------------------------------------------------------------|
 | `--type`       | auto     | Deployment type: `odoo`, `python`, or `service`; auto-detected from instance name prefix if omitted |
 | `-p`           | `22`     | SSH port, default 22                                                                                |
-| `--force`      | `False`  | Re-run steps 3–4 even if the instance directory already exists                                      |
+| `--force`      | `False`  | Re-run steps 3–5 even if the instance directory already exists                                      |
 | `--repo-subdir`| `None`   | Subdirectory within the repository to work on, if any                                               |
 
 **Steps (executed in order)**
@@ -117,9 +117,24 @@ deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--ty
 2. **Clone repository** — clone `repo_url` into `~/<instance_name>` on the target host.
    - If the directory already exists and is a valid Git repository:
      - Without `--force`: abort with an error and a hint to use `--force` or a different name.
-     - With `--force`: skip the clone, proceed to steps 3–4.
+     - With `--force`: skip the clone, proceed to steps 3–5.
 
-3. **Set up the application environment**
+3. **Ensure Postgres role and run gitaggregate if needed** (`odoo` only) — check whether
+   a Postgres role named `<instance_name>` already exists:
+   ```bash
+   psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='<instance_name>'" -d postgres
+   ```
+   - If it exists, do nothing.
+   - If it does not exist, create it as a superuser role and set a strong, randomly generated
+     password:
+     ```bash
+     createuser --no-createrole --superuser <instance_name>
+     psql -d postgres -c "ALTER ROLE \"<instance_name>\" WITH PASSWORD '<generated>'"
+     ```
+     The generated password is printed once to the console and is not stored anywhere by `deploy`.
+   - If there is addons/repos.yaml file, change to addons/ and run gitaggregate
+
+4. **Set up the application environment**
 
    - **`odoo`**: create a virtual environment using `odoo-venv`:
      ```bash
@@ -136,7 +151,7 @@ deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--ty
      (e.g. `npm ci && npm run build`, `cargo build --release`), executed remotely on the target
      host. No Python venv is created.
 
-4. **Install systemd user unit** — render the appropriate bundled template, write the unit file,
+5. **Install systemd user unit** — render the appropriate bundled template, write the unit file,
    and register it with the user-level systemd instance (no `sudo` required).
 
    - Unit file destination: `~/.config/systemd/user/<instance_name>.service`
@@ -161,6 +176,7 @@ deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--ty
 | SSH connection failed (remote targets only)  | 1         |
 | Repository already exists (without `--force`)| 1         |
 | Git clone failed                   | 1         |
+| Postgres role check/creation failed (`odoo` only) | 1  |
 | Virtual environment step failed    | 1         |
 | Template rendering / write failed  | 1         |
 

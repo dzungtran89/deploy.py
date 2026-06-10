@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from typing import Annotated, Any
 
 import typer
@@ -17,6 +18,29 @@ def _is_git_repo(executor: Executor, path: str) -> bool:
         return False
     else:
         return True
+
+
+def _postgres_user_exists(executor: Executor, instance_name: str) -> bool:
+    result = executor.capture(
+        f"psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='{instance_name}'\" -d postgres"  # noqa: S608
+    )
+    return result.strip() == "1"
+
+
+def _ensure_postgres_user(executor: Executor, instance_name: str) -> None:
+    """Create a Postgres superuser role named after the instance, if it doesn't already exist."""
+    if _postgres_user_exists(executor, instance_name):
+        return
+
+    typer.secho(f"\nCreating Postgres user {instance_name!r}…", fg="green")
+    password = secrets.token_urlsafe(16)
+    executor.run(f"createuser --no-createrole --superuser {instance_name}")
+    executor.run(f'psql -d postgres -c "ALTER ROLE \\"{instance_name}\\" WITH PASSWORD \'{password}\'"')
+    typer.secho(
+        f"Created Postgres user {instance_name!r} with password:\n  {password}\n"
+        "Save this password now — it will not be shown again.",
+        fg="yellow",
+    )
 
 
 def configure(  # noqa: C901
@@ -126,13 +150,20 @@ def configure(  # noqa: C901
                 typer.echo(typer.style(f"Git clone failed: {exc}", fg="red"), err=True)
                 raise typer.Exit(code=1) from exc
 
+    # Step 3: Ensure Postgres role and run gitaggregate if needed
     if eff_type == "odoo":
+        try:
+            _ensure_postgres_user(executor, instance_name)
+        except ExecutorError as exc:
+            typer.echo(typer.style(str(exc), fg="red"), err=True)
+            raise typer.Exit(code=1) from exc
+
         executor.run(
             "if [ -f addons/repos.yaml ]; then cd addons/ && gitaggregate -c repos.yaml; fi",
             cwd=instance_path,
         )
 
-    # Step 3: Set up environment
+    # Step 4: Set up environment
     typer.secho(f"\nSetting up {eff_type} environment…", fg="green")
     try:
         if eff_type == "odoo":
@@ -154,7 +185,7 @@ def configure(  # noqa: C901
         typer.echo(typer.style(str(exc), fg="red"), err=True)
         raise typer.Exit(code=1) from exc
 
-    # Step 4: Install systemd unit
+    # Step 5: Install systemd unit
     typer.secho("\nInstalling systemd unit…", fg="green")
     unit_instance_path = instance_path if eff_requirements else service_path
     venv_path = f"{unit_instance_path}/.venv"
