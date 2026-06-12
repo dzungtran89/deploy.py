@@ -62,10 +62,6 @@ def configure(  # noqa: C901
         typer.Option("--type", help="Deployment type (auto-detected from instance name prefix if omitted)."),
     ] = None,
     ssh_port: Annotated[int | None, typer.Option("-p", "--port", help="SSH port on the remote host.")] = None,
-    force: Annotated[
-        bool,
-        typer.Option("--force", help="Re-run setup steps even if the instance directory already exists."),
-    ] = False,
     repo_subdir: Annotated[
         str | None,
         typer.Option(help="Subdirectory within the repo to use as the service root (for monorepos)."),
@@ -76,7 +72,13 @@ def configure(  # noqa: C901
     ] = None,
     watch: Annotated[
         bool,
-        typer.Option("--watch", help="Stream service logs with journalctl after a successful configure."),
+        typer.Option(
+            "--watch",
+            help=(
+                "Stream service logs with journalctl after a successful configure. "
+                "Also merge with odoo and click-odoo-update logs if applicable."
+            ),
+        ),
     ] = False,
     steps: Annotated[
         str,
@@ -147,11 +149,9 @@ def configure(  # noqa: C901
             # Package mode: create directory directly, no git clone
             try:
                 executor.run(f"test -d {instance_path}")
-                if not force:
-                    msg = f"Instance directory already exists: ~/{instance_name}\nUse --force to re-run setup."
-                    typer.echo(typer.style(msg, fg="yellow"), err=True)
-                    raise typer.Exit(code=1)
-                typer.secho("\nDirectory exists, skipping mkdir (--force).", fg="yellow")
+                msg = f"Instance directory already exists: ~/{instance_name}\nUse --except dir to skip this step."
+                typer.echo(typer.style(msg, fg="yellow"), err=True)
+                raise typer.Exit(code=1)
             except ExecutorError:
                 typer.secho(f"\nCreating instance directory ~/{instance_name}…", fg="green")
                 executor.run(f"mkdir -p {instance_path}")
@@ -167,24 +167,19 @@ def configure(  # noqa: C901
 
             # Repo mode: clone
             if _is_git_repo(executor, instance_path):
-                if not force:
-                    msg = (
-                        f"Instance directory already exists: ~/{instance_name}\n"
-                        "Use --force to skip cloning and re-run setup."
-                    )
-                    typer.echo(typer.style(msg, fg="yellow"), err=True)
-                    raise typer.Exit(code=1)
-                typer.secho("\nDirectory exists, skipping clone (--force).", fg="yellow")
-            else:
-                typer.secho(f"\nCloning {eff_repo_url} into ~/{instance_name}…", fg="green")
-                try:
-                    clone_cmd = f"git clone --recurse-submodules {eff_repo_url} $HOME/{instance_name}"
-                    if eff_repo_branch:
-                        clone_cmd += f" --branch {eff_repo_branch}"
-                    executor.run(clone_cmd)
-                except ExecutorError as exc:
-                    typer.echo(typer.style(f"Git clone failed: {exc}", fg="red"), err=True)
-                    raise typer.Exit(code=1) from exc
+                msg = f"Instance directory already exists: ~/{instance_name}\nUse --except dir to skip this step."
+                typer.echo(typer.style(msg, fg="yellow"), err=True)
+                raise typer.Exit(code=1)
+
+            typer.secho(f"\nCloning {eff_repo_url} into ~/{instance_name}…", fg="green")
+            try:
+                clone_cmd = f"git clone --recurse-submodules {eff_repo_url} $HOME/{instance_name}"
+                if eff_repo_branch:
+                    clone_cmd += f" --branch {eff_repo_branch}"
+                executor.run(clone_cmd)
+            except ExecutorError as exc:
+                typer.echo(typer.style(f"Git clone failed: {exc}", fg="red"), err=True)
+                raise typer.Exit(code=1) from exc
 
     # Step 3: Run gitaggregate if needed
     if eff_type == "odoo" and _run_step("gitaggregate"):
@@ -206,12 +201,12 @@ def configure(  # noqa: C901
         typer.secho(f"\nSetting up {eff_type} environment…", fg="green")
         try:
             if eff_type == "odoo":
-                setup_odoo_venv(executor, instance_path, force=force)
+                setup_odoo_venv(executor, instance_path)
             elif eff_type == "python":
                 if eff_requirements:
-                    setup_package_venv(executor, instance_path, eff_requirements, force=force)
+                    setup_package_venv(executor, instance_path, eff_requirements)
                 else:
-                    setup_python_venv(executor, service_path, force=force)
+                    setup_python_venv(executor, service_path)
                     executor.run(
                         "if [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi",
                         cwd=service_path,

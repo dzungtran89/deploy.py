@@ -90,7 +90,7 @@ file values, which take precedence over built-in defaults.
 **Signature**
 
 ```bash
-deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--type odoo|python|service] [-p <ssh_port>] [--force] [--repo-subdir <subdir>]
+deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--type odoo|python|service] [-p <ssh_port>] [--repo-subdir <subdir>]
 ```
 
 **Arguments**
@@ -107,7 +107,6 @@ deploy [--config FILE] configure <instance_name> [<ssh_host>] [<repo_url>] [--ty
 |----------------|----------|-----------------------------------------------------------------------------------------------------|
 | `--type`       | auto     | Deployment type: `odoo`, `python`, or `service`; auto-detected from instance name prefix if omitted |
 | `-p`           | `22`     | SSH port, default 22                                                                                |
-| `--force`      | `False`  | Re-run steps 3–6 even if the instance directory already exists                                      |
 | `--repo-subdir`| `None`   | Subdirectory within the repository to work on, if any                                               |
 | `--repo-branch`| `None`   | Git branch to clone and track (defaults to the repository's default branch)                        |
 | `--watch`      | `False`  | Stream service logs with journalctl after a successful configure, merge with odoo log and click-odoo-update log if applicable |
@@ -125,15 +124,14 @@ Steps 2–6 each correspond to a `--steps` / `--except` slug, shown in **bold**.
 
 2. **`set-up-instance-dir`** — set up `~/<instance_name>` on the target host:
    - **`python` with `requirements`** (package mode): create the directory with `mkdir -p`.
-     If it already exists, abort unless `--force` is given (in which case the existing
-     directory is reused).
+     If it already exists, abort with an error and a hint to use `--except dir` to skip this
+     step and reuse the existing directory.
    - **`service` without `repo_url`**: create the directory with `mkdir -p`.
    - **otherwise** (repo mode — `odoo`, `python` without `requirements`, or `service` with
      `repo_url`): clone `repo_url` into `~/<instance_name>` (`git clone --recurse-submodules`,
      optionally with `--branch <repo_branch>`).
-     - If the directory already exists and is a valid Git repository:
-       - Without `--force`: abort with an error and a hint to use `--force` or a different name.
-       - With `--force`: skip the clone, proceed to step 3.
+     - If the directory already exists and is a valid Git repository, abort with an error and a
+       hint to use `--except dir` to skip the clone and proceed to step 3.
 
 3. **`run-gitaggregate`** (`odoo` only) — if `addons/repos.yaml` exists, change to `addons/` and
    run `gitaggregate -c repos.yaml`.
@@ -176,8 +174,8 @@ Steps 2–6 each correspond to a `--steps` / `--except` slug, shown in **bold**.
      (e.g. `npm ci && npm run build`, `cargo build --release`), executed remotely on the target
      host, if any. No Python venv is created.
 
-   With `--force`, an existing `.venv` (`odoo` and `python` only) is reused instead of being
-   recreated.
+   For `odoo` and `python`, if `.venv` already exists it is reused instead of being recreated;
+   use `--except venv` to skip this step entirely.
 
 6. **`install-systemd-unit`** — render the appropriate bundled template, write the unit file,
    and register it with the user-level systemd instance (no `sudo` required).
@@ -205,7 +203,7 @@ If `--watch` is set, stream `journalctl` for the unit and merge with odoo log an
 | All requested steps succeeded                | 0         |
 | Invalid `--steps` / `--except` value         | 1         |
 | SSH connection failed (remote targets only)  | 1         |
-| Repository already exists (without `--force`)| 1         |
+| Instance directory already exists (`--except dir` not given) | 1 |
 | Git clone failed                   | 1         |
 | Postgres role check/creation failed (`odoo` only) | 1  |
 | Virtual environment / build step failed    | 1         |

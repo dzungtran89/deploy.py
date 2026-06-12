@@ -42,7 +42,13 @@ def update(  # noqa: C901
     ] = None,
     watch: Annotated[
         bool,
-        typer.Option("--watch", help="Stream service logs with journalctl after a successful update."),
+        typer.Option(
+            "--watch",
+            help=(
+                "Stream service logs with journalctl after a successful update. "
+                "Also merge with odoo and click-odoo-update logs if applicable."
+            ),
+        ),
     ] = False,
     steps: Annotated[
         str,
