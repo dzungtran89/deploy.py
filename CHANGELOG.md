@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v0.18.0 (2026-06-15)
+
+### Features
+
+- **configure**: Create Postgres role for new odoo instances
+  ([`8c36d4e`](https://github.com/trobz/deploy.py/commit/8c36d4e6e74ee3f6fd6fc79f857f0874e5398a00))
+
+- **configure,update**: Add --step/--except options for granular step control
+  ([`448adb1`](https://github.com/trobz/deploy.py/commit/448adb126c542f14442853fcc5e628d7505a3e06))
+
+### Refactoring
+
+- **configure**: Drop --force in favor of --except dir/venv
+  ([`f92f5a2`](https://github.com/trobz/deploy.py/commit/f92f5a2a23fbc83339a57a4c7fc0e7fe3b78070d))
+
+
 ## v0.17.0 (2026-06-10)
 
 ### Bug Fixes
