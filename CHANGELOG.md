@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.20.0 (2026-06-15)
+
+### Features
+
+- **update**: Add module-targeted updates and click-odoo-update passthrough options
+  ([`397308f`](https://github.com/trobz/deploy.py/commit/397308f43139b529a2ac79f7435977b046ed91f8))
+
+
 ## v0.19.0 (2026-06-15)
 
 ### Features
