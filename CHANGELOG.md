@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.19.0 (2026-06-15)
+
+### Features
+
+- Have option to show version
+  ([`b500135`](https://github.com/trobz/deploy.py/commit/b5001358440fc32fecb6ff8f969719441142f942))
+
+
 ## v0.18.0 (2026-06-15)
 
 ### Features
