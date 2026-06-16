@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.21.0 (2026-06-16)
+
+### Features
+
+- **configure,update**: Add --dry-run to preview steps without side effects
+  ([`20c0f1b`](https://github.com/trobz/deploy.py/commit/20c0f1bde9b7115a953acf2c3e9f033e54b6c00a))
+
+
 ## v0.20.0 (2026-06-15)
 
 ### Features
