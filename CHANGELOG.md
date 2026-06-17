@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.22.0 (2026-06-17)
+
+### Features
+
+- **configure**: Have --recreate option to re-create venv and unit file
+  ([`4bef3cf`](https://github.com/trobz/deploy.py/commit/4bef3cf7e5e1cf8107dff70cf96af095e8552b6e))
+
+
 ## v0.21.1 (2026-06-16)
 
 ### Bug Fixes
