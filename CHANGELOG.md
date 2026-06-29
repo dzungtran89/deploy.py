@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.23.1 (2026-06-29)
+
+### Bug Fixes
+
+- **configure**: Honor deploy.yml db credentials and pass --instance-dir
+  ([`62b8d7b`](https://github.com/trobz/deploy.py/commit/62b8d7b9c867d51bc48169ce8855f4cd9e649c26))
+
+
 ## v0.23.0 (2026-06-29)
 
 ### Documentation
