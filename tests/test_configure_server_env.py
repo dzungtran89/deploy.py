@@ -44,7 +44,7 @@ def _invoke(runner, cfg, *, env_exists):
         MockExecutor.return_value = mock_exec
         result = runner.invoke(
             app,
-            ["configure", "odoo-myapp-staging", "--type", "odoo", "--steps", "config"],
+            ["configure", "odoo-myapp-staging", "--type", "odoo", "--steps", "env"],
         )
         return result, mock_exec
 

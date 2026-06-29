@@ -59,6 +59,7 @@ CONFIGURE_STEPS = {
     "gitaggregate": "Run gitaggregate if needed",
     "venv": "Creating the venv",
     "config": "Generating Odoo config",
+    "env": "Generating server.env",
     "unit": "Installing systemd unit",
 }
 
@@ -293,7 +294,6 @@ def configure(  # noqa: C901
 
     # Step 5: Generate Odoo config via odoo-config on the target host
     if eff_type == "odoo" and _run_step("config"):
-        # 5.1: config/odoo.conf
         conf_dir = f"{instance_path}/config"
         conf_path = f"{conf_dir}/{ODOO_CONFIG_FILENAME}"
         conf_exists = _file_exists(executor, conf_path)
@@ -333,12 +333,14 @@ def configure(  # noqa: C901
                 fg="yellow",
             )
 
-        # 5.2: config/server.env — default thread limits, enriched by deploy.yml `env`.
+    # Step 6: Generate config/server.env — default thread limits, enriched by deploy.yml `env`.
+    if eff_type == "odoo" and _run_step("env"):
+        conf_dir = f"{instance_path}/config"
         env_path = f"{conf_dir}/server.env"
         env_exists = _file_exists(executor, env_path)
 
         if not env_exists or recreate:
-            typer.secho("\nGenerating server.env…", fg="green")
+            typer.secho(f"\n{CONFIGURE_STEPS['env']}…", fg="green")
             server_env = {**DEFAULT_SERVER_ENV, **(opts.get("env") or {})}
 
             try:
@@ -359,7 +361,7 @@ def configure(  # noqa: C901
                 fg="yellow",
             )
 
-    # Step 6: Install systemd unit
+    # Step 7: Install systemd unit
     if _run_step("unit"):
         unit_dir = "$HOME/.config/systemd/user"
         unit_path = f"{unit_dir}/{instance_name}.service"
